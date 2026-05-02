@@ -651,4 +651,4 @@ docker-compose -f docker/docker-compose.yml up --build -d
 
 ---
 
-*Link Video Demo YouTube: [akan diisi setelah upload]*
+*Link Video Demo YouTube: [https://youtu.be/5RcBFFe24AU]*
