@@ -1,0 +1,197 @@
+openapi: 3.0.0
+info:
+  title: Distributed Synchronization System API
+  version: 1.0.0
+  description: API untuk Distributed Lock, Queue, dan Cache Coherence
+
+servers:
+  - url: http://localhost:8001
+    description: Lock Node 1
+  - url: http://localhost:8002
+    description: Lock Node 2 (Leader)
+  - url: http://localhost:8011
+    description: Queue Node 1
+  - url: http://localhost:8021
+    description: Cache Node 1
+
+paths:
+  /health:
+    get:
+      summary: Health check node
+      responses:
+        '200':
+          description: Node healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  node_id:
+                    type: string
+                  status:
+                    type: string
+                  uptime:
+                    type: number
+
+  /lock/acquire:
+    post:
+      summary: Acquire distributed lock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key, holder]
+              properties:
+                key:
+                  type: string
+                  example: resource-db
+                holder:
+                  type: string
+                  example: client-A
+                type:
+                  type: string
+                  enum: [exclusive, shared]
+                  default: exclusive
+      responses:
+        '200':
+          description: Lock result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  granted:
+                    type: boolean
+                  reason:
+                    type: string
+                  holder:
+                    type: string
+
+  /lock/release:
+    post:
+      summary: Release distributed lock
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key, holder]
+              properties:
+                key:
+                  type: string
+                holder:
+                  type: string
+      responses:
+        '200':
+          description: Release result
+
+  /lock/status:
+    get:
+      summary: Status Raft dan locks aktif
+      responses:
+        '200':
+          description: Raft state dan locks
+
+  /queue/publish:
+    post:
+      summary: Publish message ke topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic, message]
+              properties:
+                topic:
+                  type: string
+                  example: orders
+                message:
+                  type: object
+                producer:
+                  type: string
+      responses:
+        '200':
+          description: Published
+
+  /queue/consume:
+    post:
+      summary: Consume message dari topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [topic]
+              properties:
+                topic:
+                  type: string
+                consumer_id:
+                  type: string
+      responses:
+        '200':
+          description: Message atau null
+
+  /queue/length:
+    get:
+      summary: Panjang queue
+      parameters:
+        - name: topic
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Queue length
+
+  /cache/{key}:
+    get:
+      summary: Read cache entry
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Cache hit atau miss dengan MESI state
+    put:
+      summary: Write cache entry dan invalidate peers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [value]
+              properties:
+                value:
+                  type: object
+      responses:
+        '200':
+          description: Stored
+    delete:
+      summary: Invalidate cache entry
+      responses:
+        '200':
+          description: Deleted
+
+  /cache/stats/summary:
+    get:
+      summary: Cache statistics dan MESI states
+      responses:
+        '200':
+          description: Hit rate, miss rate, MESI states
+
+  /metrics:
+    get:
+      summary: Performance metrics node
+      responses:
+        '200':
+          description: Counters, gauges, histograms

@@ -1,0 +1,37 @@
+# Virtual environments 
+venv/
+venv311/
+.venv/
+.venv_py312/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pytest cache
+.pytest_cache/
+
+# VSCode settings 
+.vscode/
+
+# Environment variables
+.env
+
+# Database runtime
+data/
+*.db
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Locust hasil test
+.locust/
+
+# Build artifacts
+*.egg-info/
+dist/
+build/

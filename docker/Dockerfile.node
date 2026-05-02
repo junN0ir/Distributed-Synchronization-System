@@ -1,0 +1,21 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser:appuser /app
+
+USER appuser
+
+COPY --chown=appuser:appuser requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser .env.example ./.env
+
+EXPOSE 8001 8002 8003 8004
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:${NODE_PORT}/health')"
+
+CMD ["python", "-m", "src.main"]

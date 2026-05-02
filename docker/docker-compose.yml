@@ -1,0 +1,278 @@
+version: "3.9"
+
+networks:
+  sync-net:
+    driver: bridge
+
+volumes:
+  redis-data:
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - sync-net
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  lock-node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: lock-node1
+    environment:
+      - NODE_ID=lock-node1
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8001
+      - NODE_TYPE=lock
+      - CLUSTER_NODES=lock-node1:8001,lock-node2:8002,lock-node3:8003
+      - REDIS_HOST=redis
+    ports:
+      - "8001:8001"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  lock-node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: lock-node2
+    environment:
+      - NODE_ID=lock-node2
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8002
+      - NODE_TYPE=lock
+      - CLUSTER_NODES=lock-node1:8001,lock-node2:8002,lock-node3:8003
+      - REDIS_HOST=redis
+    ports:
+      - "8002:8002"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  lock-node3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: lock-node3
+    environment:
+      - NODE_ID=lock-node3
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8003
+      - NODE_TYPE=lock
+      - CLUSTER_NODES=lock-node1:8001,lock-node2:8002,lock-node3:8003
+      - REDIS_HOST=redis
+    ports:
+      - "8003:8003"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  queue-node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: queue-node1
+    environment:
+      - NODE_ID=queue-node1
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8011
+      - NODE_TYPE=queue
+      - CLUSTER_NODES=queue-node1:8011,queue-node2:8012
+      - REDIS_HOST=redis
+    ports:
+      - "8011:8011"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  queue-node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: queue-node2
+    environment:
+      - NODE_ID=queue-node2
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8012
+      - NODE_TYPE=queue
+      - CLUSTER_NODES=queue-node1:8011,queue-node2:8012
+      - REDIS_HOST=redis
+    ports:
+      - "8012:8012"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  cache-node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: cache-node1
+    environment:
+      - NODE_ID=cache-node1
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8021
+      - NODE_TYPE=cache
+      - CLUSTER_NODES=cache-node1:8021,cache-node2:8022,cache-node3:8023
+      - REDIS_HOST=redis
+    ports:
+      - "8021:8021"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  cache-node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: cache-node2
+    environment:
+      - NODE_ID=cache-node2
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8022
+      - NODE_TYPE=cache
+      - CLUSTER_NODES=cache-node1:8021,cache-node2:8022,cache-node3:8023
+      - REDIS_HOST=redis
+    ports:
+      - "8022:8022"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  cache-node3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: cache-node3
+    environment:
+      - NODE_ID=cache-node3
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8023
+      - NODE_TYPE=cache
+      - CLUSTER_NODES=cache-node1:8021,cache-node2:8022,cache-node3:8023
+      - REDIS_HOST=redis
+    ports:
+      - "8023:8023"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+        # ── PBFT Nodes (4 nodes, f=1, toleransi 1 Byzantine node) ──────────────────
+  pbft-node1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: pbft-node1
+    environment:
+      - NODE_ID=pbft-node1
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8031
+      - NODE_TYPE=pbft
+      - IS_PRIMARY=true
+      - IS_BYZANTINE=false
+      - CLUSTER_NODES=pbft-node1:8031,pbft-node2:8032,pbft-node3:8033,pbft-node4:8034
+      - REDIS_HOST=redis
+      - PBFT_F=1
+    ports:
+      - "8031:8031"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  pbft-node2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: pbft-node2
+    environment:
+      - NODE_ID=pbft-node2
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8032
+      - NODE_TYPE=pbft
+      - IS_PRIMARY=false
+      - IS_BYZANTINE=false
+      - CLUSTER_NODES=pbft-node1:8031,pbft-node2:8032,pbft-node3:8033,pbft-node4:8034
+      - REDIS_HOST=redis
+      - PBFT_F=1
+    ports:
+      - "8032:8032"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  pbft-node3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: pbft-node3
+    environment:
+      - NODE_ID=pbft-node3
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8033
+      - NODE_TYPE=pbft
+      - IS_PRIMARY=false
+      - IS_BYZANTINE=false
+      - CLUSTER_NODES=pbft-node1:8031,pbft-node2:8032,pbft-node3:8033,pbft-node4:8034
+      - REDIS_HOST=redis
+      - PBFT_F=1
+    ports:
+      - "8033:8033"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  pbft-node4:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.node
+    container_name: pbft-node4
+    environment:
+      - NODE_ID=pbft-node4
+      - NODE_HOST=0.0.0.0
+      - NODE_PORT=8034
+      - NODE_TYPE=pbft
+      - IS_PRIMARY=false
+      - IS_BYZANTINE=false
+      - CLUSTER_NODES=pbft-node1:8031,pbft-node2:8032,pbft-node3:8033,pbft-node4:8034
+      - REDIS_HOST=redis
+      - PBFT_F=1
+    ports:
+      - "8034:8034"
+    networks:
+      - sync-net
+    depends_on:
+      redis:
+        condition: service_healthy
