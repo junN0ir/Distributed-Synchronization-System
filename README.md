@@ -5,6 +5,12 @@
 
 ---
 
+*Link Video Demo YouTube: [https://youtu.be/5RcBFFe24AU]*
+
+*Link Laporan: [https://drive.google.com/file/d/160Fq_gyQmJWFnYrRkJVzGogJtz25scqj/view?usp=sharing]*
+
+---
+
 ## Daftar Isi
 1. [Gambaran Sistem](#gambaran-sistem)
 2. [Arsitektur](#arsitektur)
@@ -649,6 +655,3 @@ docker-compose -f docker/docker-compose.yml down -v
 docker-compose -f docker/docker-compose.yml up --build -d
 ```
 
----
-
-*Link Video Demo YouTube: [https://youtu.be/5RcBFFe24AU]*
